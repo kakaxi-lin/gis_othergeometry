@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+  <head>
+    <title>添加其他图形</title>
+	
+    <meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
+    <meta http-equiv="description" content="this is my page">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    
+    <link rel="stylesheet" type="text/css" href="http://130.10.7.207:8080/arcgis_js_v39_api/arcgis_js_api/library/3.9/jsapicompact/js/esri/css/esri.css">
+	<script type="text/javascript" src="http://130.10.7.207:8080/arcgis_js_v39_api/arcgis_js_api/library/3.9/jsapicompact/"></script>
+	<script type="text/javascript" src="js/jquery-1.8.3.js"></script>
+    <link type="text/css" rel="stylesheet" href="css/demos.css">
+    <script type="text/javascript" src="js/jquery.contextmenu.r2.js"></script>
+	<script type="text/javascript">
+	dojo.require("esri.map");
+	dojo.require("esri.toolbars.draw");
+    var map;
+    var lineLayer,draw,symbol,lineGraphic;
+    function init(){
+    	map = new esri.Map("map", {logo: false});
+        var baseMap = new esri.layers.ArcGISTiledMapServiceLayer("http://130.10.7.207:8399/rest/services/chaoyang_SDE_1211/MapServer");
+        map.addLayer(baseMap);
+        lineLayer=new esri.layers.GraphicsLayer({id:"lineLayer"});
+        map.addLayer(lineLayer);
+        draw=new esri.toolbars.Draw(map);
+        dojo.connect(draw,"onDrawEnd", addToMap);
+     
+    }
+    dojo.addOnLoad(init);
+    
+    function addToMap1(geometry){
+		var graphic=new esri.Graphic(geometry,symbol);
+		lineLayer.add(graphic)
+		
+	}
+    function addToMap(geometry) {
+    	//定义右键菜单
+		$('#lineLayer_layer').contextMenu('rightMenu', 
+			{
+				onShowMenu: function(e, menu){
+					return menu;
+				},
+				bindings: {
+			     	'delete': function(t) {
+						lineLayer.remove(lineGraphic)
+			         }
+			    }
+			 });
+		$("#lineLayer_layer").bind("contextmenu",function(e){
+			lineGraphic=e.target.e_graphic;
+		});
+		//此处设置颜色：
+		var color= new dojo.Color([255,0,0])
+        switch (geometry.type) {
+           case "polyline":
+             var symbol = new esri.symbol.SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_SOLID,color, 3);
+             break;
+           case "polygon":
+             var symbol = new esri.symbol.SimpleFillSymbol(esri.symbol.SimpleFillSymbol.STYLE_SOLID, new esri.symbol.SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_SOLID, new dojo.Color([255,0,0]), 2), new dojo.Color([0,255,0,0.5]));
+             break;
+           
+         }
+         var graphic = new esri.Graphic(geometry, symbol);
+         lineLayer.add(graphic);
+       }
+
+ 	
+	function stopAddPolyline(){
+		draw.deactivate()
+	}
+	
+	function clearAllLine(){
+		lineLayer.clear()
+	}
+	</script>
+  </head>
+  
+  <body>
+    <div id="map" style="height:500px"></div>
+  	<input type="button" value="添加圆形" onclick="draw.activate(esri.toolbars.Draw.CIRCLE);"/>
+  	<input type="button" value="添加矩形" onclick="draw.activate(esri.toolbars.Draw.RECTANGLE)"/>
+  	<input type="button" value="手画曲线" onclick="draw.activate(esri.toolbars.Draw.FREEHAND_POLYLINE)"/>
+  	<input type="button" value="添加多边形" onclick="draw.activate(esri.toolbars.Draw.POLYGON)"/>
+  	<input type="button" value="停止添加" onclick="stopAddPolyline()"/>
+  	<input type="button" value="清除所有图形" onclick="clearAllLine()"/><br/><br/>
+  	/**--右键删除对应的图形标记**/
+  	<div class="contextmenu" id="rightMenu" style="display:none">
+		<ul>
+			<li id="delete">删除标记</li>
+		</ul>
+	</div>
+  </body>
+</html>

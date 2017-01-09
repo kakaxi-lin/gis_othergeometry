@@ -1,0 +1,51 @@
+<!DOCTYPE HTML>
+
+<html>
+  <head>
+  <title>Simple Map</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <link rel="stylesheet" type="text/css" href="http://130.10.7.207:8080/arcgis_js_v39_api/arcgis_js_api/library/3.9/jsapicompact/js/esri/css/esri.css">
+	<script type="text/javascript" src="http://130.10.7.207:8080/arcgis_js_v39_api/arcgis_js_api/library/3.9/jsapicompact/"></script>
+    <script type="text/javascript">
+	 dojo.require("esri.map");
+	 dojo.require("esri.config");
+	    esriConfig.defaults.io.corsDetection=false;
+     //dojo.require("esri.SpatialReference");
+		var map;
+		var countyLayer;
+		var spatialReference;
+     
+      function init() {
+        map = new esri.Map("mapDiv");
+        //note that if you do not have public Internet access then you will need to point this url to your own locally accessible cached service.
+spatialReference=new esri.SpatialReference({wkid:102113});
+        var myTiledMapServiceLayer = new esri.layers.ArcGISTiledMapServiceLayer("http://130.10.7.207:8399/rest/services/chaoyang_SDE_1211/MapServer");
+        countyLayer = new esri.layers.GraphicsLayer( {
+    		id : "s"
+        });
+        map.addLayer(myTiledMapServiceLayer);
+        var pt = new esri.geometry.Point(12971522.046616634,4841811.239531843,spatialReference)
+        var sms = new esri.symbol.SimpleMarkerSymbol().setStyle(
+          esri.symbol.SimpleMarkerSymbol.STYLE_SQUARE).setColor(
+          new esri.Color([255,0,0,0.5]));
+          var graphic = new esri.Graphic(pt,sms);
+        countyLayer.add(graphic);
+        map.addLayer(countyLayer);
+                dojo.connect(map, 'onClick', function(e) {
+        	   console.log(e.mapPoint.x,e.mapPoint.y);
+        	  })
+      }
+
+      dojo.addOnLoad(init);
+    
+	   
+    </script>
+
+  </head>
+
+  <body>
+    <div id="mapDiv" style="width:900px; height:600px; border:1px solid #000;"></div>
+
+  </body>
+
+</html>

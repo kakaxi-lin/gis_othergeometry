@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+  <head>
+    <title>添加箭头</title>
+    <meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
+    <meta http-equiv="description" content="this is my page">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+     <link rel="stylesheet" type="text/css" href="http://130.10.7.207:8080/arcgis_js_v39_api/arcgis_js_api/library/3.9/jsapicompact/js/esri/css/esri.css">
+	<script type="text/javascript" src="http://130.10.7.207:8080/arcgis_js_v39_api/arcgis_js_api/library/3.9/jsapicompact/"></script>
+	<script type="text/javascript" src="js/jquery-1.8.3.js"></script>
+    <link type="text/css" rel="stylesheet" href="css/demos.css">
+    <script type="text/javascript" src="js/jquery.contextmenu.r2.js"></script>
+    <script type="text/javascript">
+    dojo.require("esri.map");
+    dojo.require("esri.toolbars.draw");
+    var map,tb;
+    var iMutiArrow=0;
+    var levelScale=0;
+    //获取最大比例尺数值
+    var maxScale;
+    //设置图层的箭头长度特定值
+    var specialL=1090;
+    var currentScale;
+    var mutiArrowLayer,mutiArrowGraphic;
+    function init(){
+    	map = new esri.Map("map", {logo: false});
+    	mutiArrowLayer=new esri.layers.GraphicsLayer({id:"mutiArrowLayer"});
+        var tiledMapServiceLayer = new esri.layers.ArcGISTiledMapServiceLayer("http://130.10.7.207:8399/rest/services/chaoyang_SDE_1211/MapServer");
+        map.addLayer(tiledMapServiceLayer);
+        map.addLayer(mutiArrowLayer);
+        dojo.connect(map, "onLoad", initToolbar);
+        dojo.connect(map,"onZoomEnd",function(e){
+        	currentScale = map.getScale();
+        	levelScale=map.getZoom();
+        });
+    }
+    dojo.addOnLoad(init);
+    function initToolbar(map) {
+         tb = new esri.toolbars.Draw(map);
+         dojo.connect(tb, "onDrawEnd", addGraphic);
+         maxScale=map.getMinScale();
+         currentScale = map.getScale();
+    }
+  
+	function addGraphic(geometry) {
+		iMutiArrow++;
+		//定义右键菜单
+		$('#mutiArrowLayer_layer').contextMenu('rightMenu', 
+			{
+				onShowMenu: function(e, menu){
+					return menu;
+				},
+				bindings: {
+			     	'delete': function(t) {
+					 	var gg=mutiArrowLayer.graphics;
+						for ( var k = 0; k < gg.length; k++) {
+							if(gg[k].attributes.numberArrow==mutiArrowGraphic){
+								mutiArrowLayer.remove(gg[k]);
+								k=k-1
+							}
+						}
+			         }
+			    }
+			 });
+		$("#mutiArrowLayer_layer").bind("contextmenu",function(e){
+			mutiArrowGraphic=e.target.e_graphic.attributes.numberArrow;
+		});
+	 var polyline=new esri.geometry.Polyline(new esri.SpatialReference({wkid:"102113"}));
+	var len=geometry.paths[0].length;
+	//var num=Math.ceil(len/2) ;
+	for ( var i = 0; i < len-1; i++) {
+		 var x1=geometry.paths[0][i][0];
+         var y1=geometry.paths[0][i][1];
+         var x2=geometry.paths[0][i+1][0];
+         var y2=geometry.paths[0][i+1][1];
+         var pArray=getArrowPoint(x1,y1,x2,y2);
+         if(pArray.length>1){
+         polyline.addPath([new esri.geometry.Point(x2,y2), new esri.geometry.Point(pArray[0])]);
+         polyline.addPath([new esri.geometry.Point(x2,y2), new esri.geometry.Point(pArray[1])]);
+         }
+	}
+         var type = geometry.type;
+         if (type === "point" || type === "multipoint") {
+             symbol = tb.markerSymbol;
+         }else if (type === "line" || type === "polyline") {
+             symbol = tb.lineSymbol;
+         }else {
+             symbol = tb.fillSymbol;
+         }
+         var gra=new esri.Graphic(geometry, symbol);
+         gra.setAttributes({"numberArrow":iMutiArrow});
+         mutiArrowLayer.add(gra);
+         var gra1=new esri.Graphic(polyline, symbol);
+         gra1.setAttributes({"numberArrow":iMutiArrow});
+         mutiArrowLayer.add(gra1);
+       }
+		function getoxy(Xp,Yp,sinA,cosA){
+			x=Xp*cosA-Yp*sinA;
+			y=Xp*sinA+Yp*cosA;
+			return [x,y];
+		}
+	function getArrowPoint(x1,y1,x2,y2){
+  		var yy= y2-y1;
+		var xx= x2-x1;
+		//求两点间距即斜边L
+		var L=Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+		var sinA=yy/L;
+		var cosA=xx/L;
+		var x1p=x1*cosA+y1*sinA;
+		var y1p=-x1*sinA+y1*cosA;
+		var x2p=x2*cosA+y2*sinA;
+		var y2p=-x2*sinA+y2*cosA;
+		var pointArray=[];
+		//var spNum=Math.pow(2,levelScale);
+		var spNum=maxScale/currentScale;
+		if(L<(specialL/spNum)){
+			pointArray.push(0)
+		}else{
+			pointArray.push(getoxy(x2p-specialL/spNum,y1p+(specialL/3)/spNum,sinA,cosA));
+			pointArray.push(getoxy(x2p-specialL/spNum,y1p-(specialL/3)/spNum,sinA,cosA));
+		}
+		
+		return pointArray
+	}
+
+    </script>
+  </head>
+  
+  <body>
+   <div id="map"></div>
+   <button onclick="tb.activate(esri.toolbars.Draw.POLYLINE);">添加箭头</button>
+   <button onclick="tb.deactivate();">停止添加</button>
+   <button onclick="mutiArrowLayer.clear();">清除所有箭头</button><br/><br>
+   /**--右键删除对应的箭头标记--**/
+  	<div class="contextmenu" id="rightMenu" style="display:none">
+		<ul>
+			<li id="delete">删除标记</li>
+		</ul>
+	</div>
+  </body>
+</html>

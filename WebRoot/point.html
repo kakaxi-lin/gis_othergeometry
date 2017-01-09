@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+	<head>
+		<title>图片缩放</title>
+		<meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
+		<meta http-equiv="description" content="this is my page">
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<link rel="stylesheet" type="text/css"
+			href="http://130.10.7.207:8080/arcgis_js_v39_api/arcgis_js_api/library/3.9/jsapicompact/js/esri/css/esri.css">
+		<script type="text/javascript"
+			src="http://130.10.7.207:8080/arcgis_js_v39_api/arcgis_js_api/library/3.9/jsapicompact/"></script>
+		<script type="text/javascript" src="js/jquery-1.8.3.js"></script>
+		<link type="text/css" rel="stylesheet" href="css/demos.css">
+		<script type="text/javascript" src="js/jquery.contextmenu.r2.js"></script>
+		<script type="text/javascript">
+	dojo.require("esri.map");
+    var map;
+    var pointLayer,symbol;
+    var clickEvent=null;
+    var zoom;
+    var pointGraphic;
+    //定义图片的大小
+    var imgSize;
+    function init(){
+    map = new esri.Map("map", {logo: false});
+        var baseMap = new esri.layers.ArcGISTiledMapServiceLayer("http://130.10.7.207:8399/rest/services/chaoyang_SDE_1211/MapServer");
+        map.addLayer(baseMap);
+        pointLayer=new esri.layers.GraphicsLayer({id:"pointLayer"});
+        map.addLayer(pointLayer);
+        dojo.connect(map, "onLoad",function(){
+			zoom=map.getZoom();
+			imgSize=10+5*zoom;
+        });
+        dojo.connect(map,"onZoomEnd",function(e){
+        	zoom=map.getZoom();
+        	imgSize=10+5*zoom;
+        	var gg=pointLayer.graphics;
+        	for ( var i = 0; i < gg.length; i++) {
+				gg[i].symbol.setWidth(imgSize).setHeight(imgSize)
+			}
+        })
+    }
+    dojo.addOnLoad(init);
+    function addPoint(){
+    	clickEvent=dojo.connect(map,"onClick",addToMap);
+    	//定义右键菜单
+		$('#pointLayer_layer').contextMenu('rightMenu', 
+			{
+				onShowMenu: function(e, menu){
+					return menu;
+				},
+				bindings: {
+			     	'delete': function(t) {
+						pointLayer.remove(pointGraphic)
+			         }
+			    }
+			 });
+		$("#pointLayer_layer").bind("contextmenu",function(e){
+			pointGraphic=e.target.e_graphic;
+		});
+		
+    }
+    function addToMap(evt){
+    	symbol=new esri.symbol.PictureMarkerSymbol("img/wj.png",imgSize,imgSize);
+		pointLayer.add(new esri.Graphic(evt.mapPoint,symbol));
+    }
+    function stopAddPoint(){
+		dojo.disconnect(clickEvent)
+    }
+    </script>
+	</head>
+	<body>
+		<div id="map" style="height: 800px"></div>
+		<input type="button" value="添加标记" onclick="addPoint()" />
+		<input type="button" value="停止添加" onclick="stopAddPoint()" />
+		<input type="button" value="清除所有标记" onclick="pointLayer.clear();" />
+		<br />
+		<br />
+		/**--右键删除对应的点标记**/
+		<div class="contextmenu" id="rightMenu" style="display: none">
+			<ul>
+				<li id="delete">
+					删除标记
+				</li>
+			</ul>
+		</div>
+	</body>
+</html>

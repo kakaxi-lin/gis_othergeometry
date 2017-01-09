@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+  <head>
+    <title>text.html</title>
+	
+    <meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
+    <meta http-equiv="description" content="this is my page">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    
+    <link rel="stylesheet" type="text/css" href="http://130.10.7.207:8080/arcgis_js_v39_api/arcgis_js_api/library/3.9/jsapicompact/js/esri/css/esri.css">
+	<script type="text/javascript" src="http://130.10.7.207:8080/arcgis_js_v39_api/arcgis_js_api/library/3.9/jsapicompact/"></script>
+	<script type="text/javascript" src="js/jquery-1.8.3.js"></script>
+    <link type="text/css" rel="stylesheet" href="css/demos.css">
+    <script type="text/javascript" src="js/jquery.contextmenu.r2.js"></script>
+    <script type="text/javascript">
+    dojo.require("esri.map");
+    var map;
+    var info,sangel,textGraphic;
+    var textLayer;
+    var iText=0;
+    function init(){
+    	map = new esri.Map("map", {logo: false});
+        var baseLayer = new esri.layers.ArcGISTiledMapServiceLayer("http://130.10.7.207:8399/rest/services/chaoyang_SDE_1211/MapServer");
+        map.addLayer(baseLayer);
+        textLayer=new esri.layers.GraphicsLayer({id:"textLayer"});
+        map.addLayer(textLayer)
+    }
+    dojo.addOnLoad(init);
+    
+    function addText(){
+    	//定义右键菜单
+		$('#textLayer_layer').contextMenu('rightMenu', 
+			{
+				onShowMenu: function(e, menu){
+					return menu;
+				},
+				bindings: {
+			     	'delete': function(t) {
+						var gg=textLayer.graphics;
+						//console.log("length..."+gg.length);
+						for ( var k = 0; k < gg.length; k++) {
+							if(gg[k].attributes.numberText==textGraphic){
+								//console.log(gg[k].attributes.numberText);
+								textLayer.remove(gg[k]);
+								k=k-1
+							}
+						}
+			         }
+			    }
+			 });
+		$("#textLayer_layer").bind("contextmenu",function(e){
+			textGraphic=e.target.e_graphic.attributes.numberText;
+			//console.log("要删的是。。。"+textGraphic)
+		});
+    	dojo.connect(map,"onClick",addInfo)
+    }
+    function addInfo(evt){
+    	iText=iText+1;
+    info=document.getElementById("textinfo").value;
+    sangel=document.getElementById("sangel").value;
+    //console.log(info);
+    var a=info.split("\n");
+    //console.log(a.length);
+    var xss=0;
+    var yss=0;
+    //var xyss=25;
+    //获取字号
+    var xyss=$("#textFont").val();
+    //获取粗细
+    var fontWeight=eval("esri.symbol.Font."+$("#fontWeight").val());
+    var fSize=xyss+"px";
+   // info=a.join("\r");
+   //获取字体
+   var textType=$("#textType").val();
+   
+    	if(info==""){
+    		alert("请输入文字！");
+    		return
+    	}
+    	
+    	for(var j=0;j<a.length;j++){
+    	
+    	var textFont=new esri.symbol.Font({size:fSize,weight:fontWeight,family:textType});
+   		var symbol=new esri.symbol.TextSymbol(a[j],textFont,new dojo.Color([255,0,0]));
+    symbol.setAngle(sangel);
+    symbol.setOffset(xss, yss);
+    symbol.setRotated(false);
+    symbol.setAlign(esri.symbol.TextSymbol.ALIGN_START);
+    var point=new esri.geometry.Point(evt.mapPoint);
+    var gra=new esri.Graphic(point, symbol);
+    gra.setAttributes({"numberText":iText});
+    textLayer.add(gra);
+    //iText
+    var xdu=(sangel) * Math.PI / 180
+    xss=xss-xyss*Math.sin(xdu);
+    yss=yss-xyss*Math.cos(xdu);
+    	}
+    	
+    }
+    </script>
+  </head>
+  
+  <body>
+    <div id="map" style="height:500px"></div>
+   内容:<textarea rows="8" cols="20" id="textinfo"></textarea><br>
+   字体: <select id="textType">
+    	<option value="宋体">宋体</option>
+    	<option value="仿宋">仿宋</option>
+    	<option value="楷体">楷体</option>
+    	<option value="黑体">黑体</option>
+    </select>
+   字体粗细: <select id="fontWeight">
+    	<option value="STYLE_NORMAL">标准</option>
+    	<option value="WEIGHT_BOLD">较粗</option>
+    	<option value="WEIGHT_BOLDER">特粗</option>
+    </select>
+   字号: <select id="textFont">
+    	<option value="15">15</option>
+    	<option value="20">20</option>
+    	<option value="25">25</option>
+    	<option value="30">30</option>
+    </select>
+    
+    <!--<br>排列方式:<br> <input type="radio" value="1"/>横排<br><input type="radio" value="2"/>斜排<br>
+    <input type="radio" value="1"/>竖排(未加)<br> -->
+    角度:<input type="text" value="" id="sangel"><br/><br/>
+    <input type="button" value="添加文字" onclick="addText()"/>
+    <br/>
+
+    /**--右键删除对应的文字标记--  角度值为 0--360**/
+  	<div class="contextmenu" id="rightMenu" style="display:none">
+		<ul>
+			<li id="delete">删除标记</li>
+		</ul>
+	</div>
+      </body>
+</html>
